@@ -1,8 +1,12 @@
 import numpy as np
+
+# Safe GPU import — falls back to NumPy on CPU-only environments (e.g. Streamlit Cloud)
 try:
     import cupy as cp
+    # Quick sanity-check: confirm CUDA is actually available
+    cp.array([0])
     HAS_CUPY = True
-except ImportError:
+except Exception:
     HAS_CUPY = False
 
 def get_xp():
