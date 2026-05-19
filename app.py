@@ -19,6 +19,25 @@ from ising_simulation import (
 # ----------------- Professional Configuration -----------------
 st.set_page_config(page_title="Ising Model Simulator", layout="wide", page_icon="🧲")
 
+# Suppress the white-flash blink that occurs when Streamlit clears image
+# placeholders between reruns.  We zero-out Streamlit's built-in fade-in
+# transition for img tags so the lattice appears to update in-place.
+st.html("""
+<style>
+/* Prevent image placeholder from flashing white on every rerun */
+[data-testid="stImage"] img,
+[data-testid="stImage"] > div > img {
+    opacity: 1 !important;
+    transition: none !important;
+    animation: none !important;
+}
+/* Also kill the skeleton/loading shimmer that shows briefly */
+[data-testid="stImage"] [data-testid="stImageContainer"] {
+    background: transparent !important;
+}
+</style>
+""")
+
 # Safe defaults — N=50 is cloud-friendly (N=100 can be slow on CPU-only)
 DEFAULTS = {
     "N": 50,
@@ -233,6 +252,15 @@ if st.session_state.running:
         st.error(f"Simulation error: {e}")
         st.session_state.running = False
         st.stop()
+
+    # --- Push the new frame into the placeholder BEFORE rerun ---
+    # This eliminates the blank-frame flash: the updated image is written
+    # directly into the existing DOM slot so there is no visible gap.
+    grid_placeholder.image(
+        render_lattice_to_image(st.session_state.spins),
+        use_container_width=True,
+        output_format="PNG"
+    )
 
     # --- Update metrics ---
     E = calculate_energy(st.session_state.spins, J, H) / N_sq
